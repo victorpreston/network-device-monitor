@@ -1,5 +1,6 @@
 package com.bcs.networkdevicemonitor.controller;
 
+import com.bcs.networkdevicemonitor.domain.enums.DeviceStatus;
 import com.bcs.networkdevicemonitor.dto.request.RegisterDeviceRequest;
 import com.bcs.networkdevicemonitor.dto.request.SubmitReportRequest;
 import com.bcs.networkdevicemonitor.dto.response.ApiResponse;
@@ -30,8 +31,10 @@ public class DeviceController {
     }
 
     @GetMapping
-    public ApiResponse<List<DeviceListResponse>> listAll() {
-        List<DeviceListResponse> devices = deviceService.listAll();
+    public ApiResponse<List<DeviceListResponse>> listAll(
+            @RequestParam(required = false) DeviceStatus status,
+            @RequestParam(required = false) Boolean stale) {
+        List<DeviceListResponse> devices = deviceService.listAll(status, stale);
         return ApiResponse.success(devices, devices.size());
     }
 

@@ -85,7 +85,7 @@ class DeviceControllerTest {
 
         @Test
         void returns200_withDeviceList() throws Exception {
-            when(deviceService.listAll()).thenReturn(List.of(listResponse("Router-01"), listResponse("Switch-01")));
+            when(deviceService.listAll(null, null)).thenReturn(List.of(listResponse("Router-01"), listResponse("Switch-01")));
 
             mockMvc.perform(get("/api/v1/devices"))
                     .andExpect(status().isOk())
@@ -96,12 +96,34 @@ class DeviceControllerTest {
 
         @Test
         void returns200_withEmptyList() throws Exception {
-            when(deviceService.listAll()).thenReturn(List.of());
+            when(deviceService.listAll(null, null)).thenReturn(List.of());
 
             mockMvc.perform(get("/api/v1/devices"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data.length()").value(0))
                     .andExpect(jsonPath("$.meta.count").value(0));
+        }
+
+        @Test
+        void filters_whenStatusParamProvided() throws Exception {
+            DeviceListResponse offline = new DeviceListResponse(UUID.randomUUID(), "Switch-01", "Switch", "10.0.0.1", "London-01", OffsetDateTime.now(), DeviceStatus.OFFLINE, OffsetDateTime.now(), false);
+            when(deviceService.listAll(DeviceStatus.OFFLINE, null)).thenReturn(List.of(offline));
+
+            mockMvc.perform(get("/api/v1/devices").param("status", "OFFLINE"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.data[0].currentStatus").value("OFFLINE"));
+        }
+
+        @Test
+        void filters_whenStaleParamProvided() throws Exception {
+            DeviceListResponse stale = new DeviceListResponse(UUID.randomUUID(), "Router-01", "Router", "192.168.1.1", "London-01", OffsetDateTime.now(), null, null, true);
+            when(deviceService.listAll(null, true)).thenReturn(List.of(stale));
+
+            mockMvc.perform(get("/api/v1/devices").param("stale", "true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.data[0].stale").value(true));
         }
     }
 

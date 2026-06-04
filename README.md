@@ -23,7 +23,7 @@ Five tables, each with a single responsibility:
 
 | Table | Purpose |
 |-------|---------|
-| `device_types` | Reference table — CPE, Router, Switch, Access Point, Firewall, ONT |
+| `device_types` | Reference table - CPE, Router, Switch, Access Point, Firewall, ONT |
 | `sites` | Physical deployment locations |
 | `devices` | Registered network assets |
 | `reports` | Append-only status event log |
@@ -66,7 +66,7 @@ docker-compose down -v
 CREATE DATABASE netdevmon;
 ```
 
-**2. Configure credentials** (optional — defaults to `postgres/postgres`):
+**2. Configure credentials** (optional - defaults to `postgres/postgres`):
 
 ```bash
 export DB_USERNAME=your_user

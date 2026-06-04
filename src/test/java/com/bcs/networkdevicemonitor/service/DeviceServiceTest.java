@@ -93,7 +93,7 @@ class DeviceServiceTest {
             when(deviceRepository.findAllWithDetails()).thenReturn(List.of(d));
             when(currentStatusRepository.findAllById(any())).thenReturn(List.of());
 
-            List<DeviceListResponse> result = deviceService.listAll();
+            List<DeviceListResponse> result = deviceService.listAll(null, null);
 
             assertThat(result).hasSize(1);
             assertThat(result.get(0).stale()).isTrue();
@@ -108,7 +108,7 @@ class DeviceServiceTest {
             when(deviceRepository.findAllWithDetails()).thenReturn(List.of(d));
             when(currentStatusRepository.findAllById(any())).thenReturn(List.of(cs));
 
-            assertThat(deviceService.listAll().get(0).stale()).isTrue();
+            assertThat(deviceService.listAll(null, null).get(0).stale()).isTrue();
         }
 
         @Test
@@ -119,10 +119,82 @@ class DeviceServiceTest {
             when(deviceRepository.findAllWithDetails()).thenReturn(List.of(d));
             when(currentStatusRepository.findAllById(any())).thenReturn(List.of(cs));
 
-            DeviceListResponse result = deviceService.listAll().get(0);
+            DeviceListResponse result = deviceService.listAll(null, null).get(0);
 
             assertThat(result.stale()).isFalse();
             assertThat(result.currentStatus()).isEqualTo(DeviceStatus.ONLINE);
+        }
+
+        @Test
+        void filtersbyStatus_whenStatusParamProvided() {
+            Device online = device();
+            Device offline = device();
+            CurrentStatus onlineCs = currentStatus(online, DeviceStatus.ONLINE, OffsetDateTime.now().minusMinutes(1));
+            CurrentStatus offlineCs = currentStatus(offline, DeviceStatus.OFFLINE, OffsetDateTime.now().minusMinutes(1));
+
+            when(deviceRepository.findAllWithDetails()).thenReturn(List.of(online, offline));
+            when(currentStatusRepository.findAllById(any())).thenReturn(List.of(onlineCs, offlineCs));
+
+            List<DeviceListResponse> result = deviceService.listAll(DeviceStatus.OFFLINE, null);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).currentStatus()).isEqualTo(DeviceStatus.OFFLINE);
+        }
+
+        @Test
+        void filtersStale_whenStaleParamIsTrue() {
+            Device fresh = device();
+            Device stale = device();
+            CurrentStatus freshCs = currentStatus(fresh, DeviceStatus.ONLINE, OffsetDateTime.now().minusMinutes(1));
+
+            when(deviceRepository.findAllWithDetails()).thenReturn(List.of(fresh, stale));
+            when(currentStatusRepository.findAllById(any())).thenReturn(List.of(freshCs));
+
+            List<DeviceListResponse> result = deviceService.listAll(null, true);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).stale()).isTrue();
+        }
+    }
+
+    @Nested
+    class ListBySite {
+
+        @Test
+        void returnsDevicesForSite() {
+            UUID siteId = UUID.randomUUID();
+            Site site = site(siteId, "London-01");
+            Device d = device(type(UUID.randomUUID(), "Router"), site);
+
+            when(siteRepository.existsById(siteId)).thenReturn(true);
+            when(deviceRepository.findAllBySiteIdWithDetails(siteId)).thenReturn(List.of(d));
+            when(currentStatusRepository.findAllById(any())).thenReturn(List.of());
+
+            List<DeviceListResponse> result = deviceService.listBySite(siteId);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).site()).isEqualTo("London-01");
+        }
+
+        @Test
+        void returnsEmptyList_whenSiteHasNoDevices() {
+            UUID siteId = UUID.randomUUID();
+
+            when(siteRepository.existsById(siteId)).thenReturn(true);
+            when(deviceRepository.findAllBySiteIdWithDetails(siteId)).thenReturn(List.of());
+            when(currentStatusRepository.findAllById(any())).thenReturn(List.of());
+
+            assertThat(deviceService.listBySite(siteId)).isEmpty();
+        }
+
+        @Test
+        void throws_whenSiteNotFound() {
+            UUID siteId = UUID.randomUUID();
+            when(siteRepository.existsById(siteId)).thenReturn(false);
+
+            assertThatThrownBy(() -> deviceService.listBySite(siteId))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Site not found");
         }
     }
 
