@@ -19,6 +19,7 @@ public class DeviceTypeController {
 
     @GetMapping
     public ApiResponse<List<DeviceTypeResponse>> listAll() {
-        return ApiResponse.success(deviceTypeService.listAll());
+        List<DeviceTypeResponse> types = deviceTypeService.listAll();
+        return ApiResponse.success(types, types.size());
     }
 }

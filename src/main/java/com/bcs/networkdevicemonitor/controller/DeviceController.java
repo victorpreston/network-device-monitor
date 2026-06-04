@@ -26,12 +26,13 @@ public class DeviceController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<DeviceListResponse> register(@Valid @RequestBody RegisterDeviceRequest request) {
-        return ApiResponse.success("Device registered successfully", deviceService.register(request));
+        return ApiResponse.success(deviceService.register(request));
     }
 
     @GetMapping
     public ApiResponse<List<DeviceListResponse>> listAll() {
-        return ApiResponse.success(deviceService.listAll());
+        List<DeviceListResponse> devices = deviceService.listAll();
+        return ApiResponse.success(devices, devices.size());
     }
 
     @GetMapping("/{id}")
@@ -43,6 +44,6 @@ public class DeviceController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<Void> submitReport(@PathVariable UUID id, @Valid @RequestBody SubmitReportRequest request) {
         reportService.submit(id, request);
-        return ApiResponse.success("Report submitted successfully", null);
+        return ApiResponse.success(null);
     }
 }

@@ -50,8 +50,9 @@ class DeviceControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.name").value("Router-01"));
+                    .andExpect(jsonPath("$.data.name").value("Router-01"))
+                    .andExpect(jsonPath("$.errors").doesNotExist())
+                    .andExpect(jsonPath("$.meta.version").value("v1"));
         }
 
         @Test
@@ -62,7 +63,9 @@ class DeviceControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.success").value(false));
+                    .andExpect(jsonPath("$.errors[0].code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.errors[0].field").value("name"))
+                    .andExpect(jsonPath("$.data").doesNotExist());
         }
 
         @Test
@@ -72,7 +75,8 @@ class DeviceControllerTest {
             mockMvc.perform(post("/api/v1/devices")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[0].code").value("VALIDATION_ERROR"));
         }
     }
 
@@ -85,8 +89,9 @@ class DeviceControllerTest {
 
             mockMvc.perform(get("/api/v1/devices"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.success").value(true))
-                    .andExpect(jsonPath("$.data.length()").value(2));
+                    .andExpect(jsonPath("$.data.length()").value(2))
+                    .andExpect(jsonPath("$.meta.count").value(2))
+                    .andExpect(jsonPath("$.errors").doesNotExist());
         }
 
         @Test
@@ -95,7 +100,8 @@ class DeviceControllerTest {
 
             mockMvc.perform(get("/api/v1/devices"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.length()").value(0));
+                    .andExpect(jsonPath("$.data.length()").value(0))
+                    .andExpect(jsonPath("$.meta.count").value(0));
         }
     }
 
@@ -111,7 +117,8 @@ class DeviceControllerTest {
 
             mockMvc.perform(get("/api/v1/devices/{id}", id))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.id").value(id.toString()));
+                    .andExpect(jsonPath("$.data.id").value(id.toString()))
+                    .andExpect(jsonPath("$.errors").doesNotExist());
         }
 
         @Test
@@ -121,8 +128,9 @@ class DeviceControllerTest {
 
             mockMvc.perform(get("/api/v1/devices/{id}", id))
                     .andExpect(status().isNotFound())
-                    .andExpect(jsonPath("$.success").value(false))
-                    .andExpect(jsonPath("$.message").value("Device not found"));
+                    .andExpect(jsonPath("$.errors[0].message").value("Device not found"))
+                    .andExpect(jsonPath("$.errors[0].code").value("NOT_FOUND"))
+                    .andExpect(jsonPath("$.data").doesNotExist());
         }
     }
 
@@ -140,7 +148,8 @@ class DeviceControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.success").value(true));
+                    .andExpect(jsonPath("$.errors").doesNotExist())
+                    .andExpect(jsonPath("$.meta.version").value("v1"));
         }
 
         @Test
@@ -148,7 +157,9 @@ class DeviceControllerTest {
             mockMvc.perform(post("/api/v1/devices/{id}/reports", UUID.randomUUID())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("{\"message\":\"test\"}"))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[0].code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.errors[0].field").value("status"));
         }
     }
 

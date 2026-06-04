@@ -21,11 +21,12 @@ public class SiteController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<SiteResponse> register(@Valid @RequestBody RegisterSiteRequest request) {
-        return ApiResponse.success("Site registered successfully", siteService.register(request));
+        return ApiResponse.success(siteService.register(request));
     }
 
     @GetMapping
     public ApiResponse<List<SiteResponse>> listAll() {
-        return ApiResponse.success(siteService.listAll());
+        List<SiteResponse> sites = siteService.listAll();
+        return ApiResponse.success(sites, sites.size());
     }
 }

@@ -32,8 +32,9 @@ class DeviceTypeControllerTest {
 
         mockMvc.perform(get("/api/v1/device-types"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.length()").value(3))
-                .andExpect(jsonPath("$.data[0].name").value("Router"));
+                .andExpect(jsonPath("$.data[0].name").value("Router"))
+                .andExpect(jsonPath("$.meta.count").value(3))
+                .andExpect(jsonPath("$.errors").doesNotExist());
     }
 }

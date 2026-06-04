@@ -41,7 +41,9 @@ class SiteControllerTest {
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new RegisterSiteRequest("London-01", "1 Tech Street", null, null))))
                     .andExpect(status().isCreated())
-                    .andExpect(jsonPath("$.data.name").value("London-01"));
+                    .andExpect(jsonPath("$.data.name").value("London-01"))
+                    .andExpect(jsonPath("$.errors").doesNotExist())
+                    .andExpect(jsonPath("$.meta.version").value("v1"));
         }
 
         @Test
@@ -49,7 +51,10 @@ class SiteControllerTest {
             mockMvc.perform(post("/api/v1/sites")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(new RegisterSiteRequest("", null, null, null))))
-                    .andExpect(status().isBadRequest());
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errors[0].code").value("VALIDATION_ERROR"))
+                    .andExpect(jsonPath("$.errors[0].field").value("name"))
+                    .andExpect(jsonPath("$.data").doesNotExist());
         }
     }
 
@@ -65,7 +70,9 @@ class SiteControllerTest {
 
             mockMvc.perform(get("/api/v1/sites"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.data.length()").value(2));
+                    .andExpect(jsonPath("$.data.length()").value(2))
+                    .andExpect(jsonPath("$.meta.count").value(2))
+                    .andExpect(jsonPath("$.errors").doesNotExist());
         }
     }
 }
