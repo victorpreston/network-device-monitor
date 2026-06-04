@@ -375,3 +375,42 @@ depends_on:
 ```
 
 The postgres service has a `pg_isready` healthcheck. The application container does not start until the database is confirmed ready. Without this, the app starts, attempts the Flyway migration, finds no database, and crashes. The health check eliminates the race condition without any retry logic in the application.
+
+
+## 7. Frontend Decisions
+
+### 7.1 API Communication — Proxy over CORS
+
+The frontend never makes a cross-origin request. There is no `Access-Control-Allow-Origin` header on the backend, and none is needed.
+
+**In Docker** — nginx serves the React app on port 3000 and proxies `/api/` to the backend on the internal Docker network:
+
+```nginx
+location /api/ {
+    proxy_pass http://app:8080/api/;
+}
+```
+
+From the browser's perspective, both the HTML and the API responses come from the same origin (`localhost:3000`). The backend is never directly reachable from the browser — it exists only on the internal `netdevmon` Docker network.
+
+**In local development** — Vite's dev server proxies `/api/` to `http://localhost:8080`:
+
+```ts
+// vite.config.ts
+server: {
+  proxy: {
+    '/api': { target: 'http://localhost:8080', changeOrigin: true }
+  }
+}
+```
+
+Same outcome: the browser talks to Vite on port 5173, Vite forwards API calls to Spring Boot. No cross-origin boundary is crossed.
+
+**Why not just enable CORS on the backend?**
+
+| Option | Assessment |
+|---|---|
+| `@CrossOrigin` / `CorsFilter` on the backend | Requires maintaining an allowed-origins list. In Docker the origin is `localhost:3000`; in staging it changes; in production it changes again. Configuration must track deployment topology. |
+| **Proxy (nginx in Docker, Vite in dev)** ✓ | The React source references only `/api/v1/...` — no hostname, no port. The same build artifact runs in Docker, in any staging environment, and in production without modification. The proxy is the only thing that changes between environments. |
+
+The React source code contains no hardcoded host or port anywhere.
