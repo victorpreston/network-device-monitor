@@ -2,7 +2,7 @@
 
 A backend REST API for registering and monitoring network infrastructure. Devices report their operational status periodically; the system tracks current state per device, flags stale devices that have stopped reporting, and maintains a full status report history.
 
-For the reasoning behind every schema, architectural, and API design choice — see [DECISIONS.md](./DECISIONS.md).
+For the reasoning behind every schema, architectural, and API design choice - see [DECISIONS.md](./DECISIONS.md).
 
 ---
 
@@ -90,7 +90,7 @@ Flyway will run all migrations and seed device types on first start.
 Five tables. Each has a single responsibility.
 
 ### `device_types`
-Reference table. Seeded on startup — do not insert manually.
+Reference table. Seeded on startup - do not insert manually.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -112,7 +112,7 @@ Physical deployment locations.
 | `created_at` | TIMESTAMPTZ | set by application |
 
 ### `devices`
-Registered network assets. Identity only — no operational state.
+Registered network assets. Identity only - no operational state.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -135,7 +135,7 @@ Append-only event log. Never updated or deleted (except cascade).
 | `reported_at` | TIMESTAMPTZ | set by application |
 
 ### `current_status`
-One row per device. Updated in the same transaction as every report insert. The read model — O(1) lookup regardless of how large `reports` grows.
+One row per device. Updated in the same transaction as every report insert. The read model - O(1) lookup regardless of how large `reports` grows.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -221,7 +221,7 @@ Register a new site. `name` is required. `address`, `latitude`, and `longitude` 
 | Field | Type | Required | Validation |
 |---|---|---|---|
 | `name` | string | Yes | Non-blank |
-| `address` | string | No | — |
+| `address` | string | No | - |
 | `latitude` | number | No | Between -90 and 90 |
 | `longitude` | number | No | Between -180 and 180 |
 
@@ -373,7 +373,7 @@ Register a new network device. Use a `deviceTypeId` from `GET /api/v1/device-typ
 }
 ```
 
-A newly registered device has no reports yet — `currentStatus` is null and `stale` is `true`.
+A newly registered device has no reports yet - `currentStatus` is null and `stale` is `true`.
 
 ---
 
@@ -488,7 +488,7 @@ Returns a single device with its 20 most recent status reports, ordered newest f
 
 ### POST `/api/v1/devices/{id}/reports`
 
-Submit a status report for a device. This updates `current_status` in the same transaction — the list endpoint immediately reflects the new state.
+Submit a status report for a device. This updates `current_status` in the same transaction - the list endpoint immediately reflects the new state.
 
 **Request body:**
 ```json
@@ -577,7 +577,7 @@ A device is flagged `stale: true` if:
 - it has **never submitted a report**, or
 - its last report was **more than 15 minutes ago**
 
-The flag is computed at read time on every list and detail response. There is no background job — the value is always accurate to the millisecond. The threshold is a named constant in the service layer (`STALE_THRESHOLD_MINUTES = 15`).
+The flag is computed at read time on every list and detail response. There is no background job - the value is always accurate to the millisecond. The threshold is a named constant in the service layer (`STALE_THRESHOLD_MINUTES = 15`).
 
 ---
 
@@ -601,7 +601,7 @@ http://localhost:8080/docs/openapi
 ./mvnw test
 ```
 
-40 tests across two layers. No Docker or database required — all tests run against mocked dependencies.
+40 tests across two layers. No Docker or database required - all tests run against mocked dependencies.
 
 ```
 Service layer  (Mockito):   DeviceServiceTest, SiteServiceTest, ReportServiceTest
