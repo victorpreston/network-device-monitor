@@ -24,6 +24,8 @@ public class SiteServiceImpl implements SiteService {
         Site site = Site.builder()
                 .name(request.name())
                 .address(request.address())
+                .latitude(request.latitude())
+                .longitude(request.longitude())
                 .createdAt(OffsetDateTime.now())
                 .build();
 
@@ -37,6 +39,7 @@ public class SiteServiceImpl implements SiteService {
     }
 
     private SiteResponse toResponse(Site site) {
-        return new SiteResponse(site.getId(), site.getName(), site.getAddress(), site.getCreatedAt());
+        return new SiteResponse(site.getId(), site.getName(), site.getAddress(),
+                site.getLatitude(), site.getLongitude(), site.getCreatedAt());
     }
 }

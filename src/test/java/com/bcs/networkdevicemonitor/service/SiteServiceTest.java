@@ -40,7 +40,7 @@ class SiteServiceTest {
 
             when(siteRepository.save(any())).thenReturn(saved);
 
-            SiteResponse response = siteService.register(new RegisterSiteRequest("London-01", "1 Tech Street, London"));
+            SiteResponse response = siteService.register(new RegisterSiteRequest("London-01", "1 Tech Street, London", null, null));
 
             assertThat(response.name()).isEqualTo("London-01");
             assertThat(response.address()).isEqualTo("1 Tech Street, London");

@@ -34,12 +34,12 @@ class SiteControllerTest {
 
         @Test
         void returns201_whenRequestIsValid() throws Exception {
-            SiteResponse response = new SiteResponse(UUID.randomUUID(), "London-01", "1 Tech Street", OffsetDateTime.now());
+            SiteResponse response = new SiteResponse(UUID.randomUUID(), "London-01", "1 Tech Street", null, null, OffsetDateTime.now());
             when(siteService.register(any())).thenReturn(response);
 
             mockMvc.perform(post("/api/v1/sites")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(new RegisterSiteRequest("London-01", "1 Tech Street"))))
+                            .content(objectMapper.writeValueAsString(new RegisterSiteRequest("London-01", "1 Tech Street", null, null))))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.data.name").value("London-01"));
         }
@@ -48,7 +48,7 @@ class SiteControllerTest {
         void returns400_whenNameIsBlank() throws Exception {
             mockMvc.perform(post("/api/v1/sites")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(objectMapper.writeValueAsString(new RegisterSiteRequest("", null))))
+                            .content(objectMapper.writeValueAsString(new RegisterSiteRequest("", null, null, null))))
                     .andExpect(status().isBadRequest());
         }
     }
@@ -59,8 +59,8 @@ class SiteControllerTest {
         @Test
         void returns200_withSiteList() throws Exception {
             when(siteService.listAll()).thenReturn(List.of(
-                    new SiteResponse(UUID.randomUUID(), "London-01", null, OffsetDateTime.now()),
-                    new SiteResponse(UUID.randomUUID(), "Manchester-01", null, OffsetDateTime.now())
+                    new SiteResponse(UUID.randomUUID(), "London-01", null, null, null, OffsetDateTime.now()),
+                    new SiteResponse(UUID.randomUUID(), "Manchester-01", null, null, null, OffsetDateTime.now())
             ));
 
             mockMvc.perform(get("/api/v1/sites"))
