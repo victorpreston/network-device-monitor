@@ -20,7 +20,7 @@ Nothing beyond this scope is encoded in the schema or application logic. Extensi
 
 ## 1. Database Schema
 
-Five tables. Every table name is a plain English noun for the thing it stores. No abbreviations, no `tbl_` prefixes, no Hungarian notation.
+The schema is organised into five tables, each named as a plain English noun describing the thing it stores. Consistent, readable naming was a deliberate choice — avoiding abbreviations, `tbl_` prefixes, and Hungarian notation keeps the schema self-explanatory to anyone reading it for the first time.
 
 ### `device_types`
 ```sql
