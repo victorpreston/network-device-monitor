@@ -1,9 +1,6 @@
 package com.bcs.networkdevicemonitor.service;
 
-import com.bcs.networkdevicemonitor.domain.entity.CurrentStatus;
-import com.bcs.networkdevicemonitor.domain.entity.Device;
-import com.bcs.networkdevicemonitor.domain.entity.DeviceType;
-import com.bcs.networkdevicemonitor.domain.entity.Site;
+import com.bcs.networkdevicemonitor.domain.entity.*;
 import com.bcs.networkdevicemonitor.domain.enums.DeviceStatus;
 import com.bcs.networkdevicemonitor.dto.request.SubmitReportRequest;
 import com.bcs.networkdevicemonitor.exception.ResourceNotFoundException;
@@ -11,6 +8,7 @@ import com.bcs.networkdevicemonitor.repository.CurrentStatusRepository;
 import com.bcs.networkdevicemonitor.repository.DeviceRepository;
 import com.bcs.networkdevicemonitor.repository.ReportRepository;
 import com.bcs.networkdevicemonitor.service.impl.ReportServiceImpl;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -35,62 +33,61 @@ class ReportServiceTest {
 
     @InjectMocks ReportServiceImpl reportService;
 
-    @Test
-    void submit_createsReportAndCurrentStatus_whenFirstReport() {
-        Device device = device();
-        SubmitReportRequest request = new SubmitReportRequest(DeviceStatus.ONLINE, "All interfaces up");
+    @Nested
+    class Submit {
 
-        when(deviceRepository.findById(device.getId())).thenReturn(Optional.of(device));
-        when(currentStatusRepository.findById(device.getId())).thenReturn(Optional.empty());
-        when(reportRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(currentStatusRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        @Test
+        void createsReportAndCurrentStatus_whenFirstReport() {
+            Device device = device();
+            when(deviceRepository.findById(device.getId())).thenReturn(Optional.of(device));
+            when(currentStatusRepository.findById(device.getId())).thenReturn(Optional.empty());
+            when(reportRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+            when(currentStatusRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        reportService.submit(device.getId(), request);
+            reportService.submit(device.getId(), new SubmitReportRequest(DeviceStatus.ONLINE, "All interfaces up"));
 
-        verify(reportRepository, times(1)).save(any());
-        ArgumentCaptor<CurrentStatus> captor = ArgumentCaptor.forClass(CurrentStatus.class);
-        verify(currentStatusRepository, times(1)).save(captor.capture());
+            verify(reportRepository).save(any());
+            ArgumentCaptor<CurrentStatus> captor = ArgumentCaptor.forClass(CurrentStatus.class);
+            verify(currentStatusRepository).save(captor.capture());
 
-        CurrentStatus saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(DeviceStatus.ONLINE);
-        assertThat(saved.getMessage()).isEqualTo("All interfaces up");
-    }
+            assertThat(captor.getValue().getStatus()).isEqualTo(DeviceStatus.ONLINE);
+            assertThat(captor.getValue().getMessage()).isEqualTo("All interfaces up");
+        }
 
-    @Test
-    void submit_updatesExistingCurrentStatus_onSubsequentReport() {
-        Device device = device();
-        CurrentStatus existing = CurrentStatus.builder()
-                .device(device)
-                .status(DeviceStatus.ONLINE)
-                .reportedAt(OffsetDateTime.now().minusMinutes(10))
-                .build();
+        @Test
+        void updatesExistingCurrentStatus_onSubsequentReport() {
+            Device device = device();
+            CurrentStatus existing = CurrentStatus.builder()
+                    .device(device)
+                    .status(DeviceStatus.ONLINE)
+                    .reportedAt(OffsetDateTime.now().minusMinutes(10))
+                    .build();
 
-        SubmitReportRequest request = new SubmitReportRequest(DeviceStatus.DEGRADED, "High latency detected");
+            when(deviceRepository.findById(device.getId())).thenReturn(Optional.of(device));
+            when(currentStatusRepository.findById(device.getId())).thenReturn(Optional.of(existing));
+            when(reportRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+            when(currentStatusRepository.save(any())).thenAnswer(i -> i.getArgument(0));
 
-        when(deviceRepository.findById(device.getId())).thenReturn(Optional.of(device));
-        when(currentStatusRepository.findById(device.getId())).thenReturn(Optional.of(existing));
-        when(reportRepository.save(any())).thenAnswer(i -> i.getArgument(0));
-        when(currentStatusRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+            reportService.submit(device.getId(), new SubmitReportRequest(DeviceStatus.DEGRADED, "High latency"));
 
-        reportService.submit(device.getId(), request);
+            ArgumentCaptor<CurrentStatus> captor = ArgumentCaptor.forClass(CurrentStatus.class);
+            verify(currentStatusRepository).save(captor.capture());
 
-        ArgumentCaptor<CurrentStatus> captor = ArgumentCaptor.forClass(CurrentStatus.class);
-        verify(currentStatusRepository).save(captor.capture());
+            assertThat(captor.getValue().getStatus()).isEqualTo(DeviceStatus.DEGRADED);
+            assertThat(captor.getValue().getMessage()).isEqualTo("High latency");
+        }
 
-        assertThat(captor.getValue().getStatus()).isEqualTo(DeviceStatus.DEGRADED);
-        assertThat(captor.getValue().getMessage()).isEqualTo("High latency detected");
-    }
+        @Test
+        void throws_whenDeviceNotFound() {
+            UUID id = UUID.randomUUID();
+            when(deviceRepository.findById(id)).thenReturn(Optional.empty());
 
-    @Test
-    void submit_throws_whenDeviceNotFound() {
-        UUID deviceId = UUID.randomUUID();
-        when(deviceRepository.findById(deviceId)).thenReturn(Optional.empty());
+            assertThatThrownBy(() -> reportService.submit(id, new SubmitReportRequest(DeviceStatus.ONLINE, null)))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Device not found");
 
-        assertThatThrownBy(() -> reportService.submit(deviceId, new SubmitReportRequest(DeviceStatus.ONLINE, null)))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Device not found");
-
-        verifyNoInteractions(reportRepository, currentStatusRepository);
+            verifyNoInteractions(reportRepository, currentStatusRepository);
+        }
     }
 
     private Device device() {
