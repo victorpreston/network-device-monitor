@@ -1,0 +1,17 @@
+# Normalize line endings to LF on commit
+* text=auto eol=lf
+
+# Windows scripts stay CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Explicitly LF
+*.java   text eol=lf
+*.xml    text eol=lf
+*.yml    text eol=lf
+*.yaml   text eol=lf
+*.sql    text eol=lf
+*.md     text eol=lf
+*.sh     text eol=lf
+*.json   text eol=lf
+mvnw     text eol=lf
