@@ -44,6 +44,7 @@ Five tables, each with a single responsibility:
 Starts both PostgreSQL and the application:
 
 ```bash
+cp .env.example .env        # fill in your credentials
 docker-compose up --build
 ```
 
