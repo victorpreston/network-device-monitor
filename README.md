@@ -2,12 +2,12 @@
 
 A full-stack service for registering and monitoring network infrastructure assets. Devices report their operational status; the system tracks current state, flags stale devices, and maintains a full report history.
 
-For all architectural and design decisions — schema choices, API design, testing strategy, infrastructure — see [DECISIONS.md](./DECISIONS.md).
+For all architectural and design decisions - schema choices, API design, testing strategy, infrastructure - see [DECISIONS.md](./DECISIONS.md).
 
 
 ## Quick Start
 
-The entire stack — database, backend, and frontend — runs with one command from the repo root:
+The entire stack - database, backend, and frontend - runs with one command from the repo root:
 
 ```bash
 docker-compose up --build
@@ -19,7 +19,7 @@ docker-compose up --build
 | Backend API | http://localhost:8080/api/v1 |
 | Swagger UI (API docs) | http://localhost:8080/docs |
 
-No environment variables or configuration are required. The defaults (`DB_USERNAME=postgres`, `DB_PASSWORD=postgres`) are built into the Compose file. Flyway runs automatically on startup — it creates the schema and seeds demo devices covering all four statuses (Online, Degraded, Offline, Stale).
+No environment variables or configuration are required. The defaults (`DB_USERNAME=postgres`, `DB_PASSWORD=postgres`) are built into the Compose file. Flyway runs automatically on startup - it creates the schema and seeds demo devices covering all four statuses (Online, Degraded, Offline, Stale).
 
 To stop and wipe the database:
 
@@ -35,7 +35,7 @@ Three services start in a dependency chain, each waiting for the previous one to
 postgres  ──(healthy)──▶  app (Spring Boot)  ──(healthy)──▶  frontend (nginx)
 ```
 
-**API calls from the browser never hit a CORS issue** because the frontend is not making cross-origin requests. nginx — which serves the React app on port 3000 — also acts as a reverse proxy: any request the browser makes to `/api/...` is forwarded internally to `http://app:8080/api/...` on the Docker network. From the browser's perspective, everything is on the same origin (`localhost:3000`).
+**API calls from the browser never hit a CORS issue** because the frontend is not making cross-origin requests. nginx - which serves the React app on port 3000 - also acts as a reverse proxy: any request the browser makes to `/api/...` is forwarded internally to `http://app:8080/api/...` on the Docker network. From the browser's perspective, everything is on the same origin (`localhost:3000`).
 
 ```
 Browser → localhost:3000/api/v1/devices
@@ -45,7 +45,7 @@ Browser → localhost:3000/api/v1/devices
          app:8080/api/v1/devices   (Docker internal network)
 ```
 
-The React source code only ever references `/api/v1/...` — no hardcoded host or port.
+The React source code only ever references `/api/v1/...` - no hardcoded host or port.
 
 
 ## Repo Structure
@@ -71,8 +71,8 @@ network-device-monitoring/
 
 For local development (e.g. running the backend in an IDE while hot-reloading the frontend):
 
-- **[backend/README.md](./backend/README.md)** — prerequisites, environment variables, running the API, running the 40-test suite
-- **[frontend/README.md](./frontend/README.md)** — `npm install`, `npm run dev`, how the Vite dev proxy replaces nginx for local development
+- **[backend/README.md](./backend/README.md)** - prerequisites, environment variables, running the API, running the 40-test suite
+- **[frontend/README.md](./frontend/README.md)** - `npm install`, `npm run dev`, how the Vite dev proxy replaces nginx for local development
 
 
 ## Tech Stack

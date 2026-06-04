@@ -1,4 +1,4 @@
-# Frontend — NetWatch Dashboard
+# Frontend - NetWatch Dashboard
 
 React + TypeScript dashboard for the Network Device Monitoring Service, built with Vite and served via nginx inside Docker.
 
@@ -32,9 +32,9 @@ docker-compose up --build
 
 Docker Compose starts three services in order:
 
-1. **postgres** — waits until `pg_isready` passes
-2. **app** (Spring Boot) — waits until postgres is healthy, then runs Flyway migrations (including demo seed data) and starts on port 8080
-3. **frontend** (nginx) — waits until the backend health check passes, then serves the built React app on port 3000
+1. **postgres** - waits until `pg_isready` passes
+2. **app** (Spring Boot) - waits until postgres is healthy, then runs Flyway migrations (including demo seed data) and starts on port 8080
+3. **frontend** (nginx) - waits until the backend health check passes, then serves the built React app on port 3000
 
 | Service | URL |
 |---|---|
@@ -51,7 +51,7 @@ DB_USERNAME=postgres
 DB_PASSWORD=postgres
 ```
 
-The frontend container itself has no environment variables — the nginx proxy handles routing API calls to the backend at build time via `nginx.conf`.
+The frontend container itself has no environment variables - the nginx proxy handles routing API calls to the backend at build time via `nginx.conf`.
 
 ### Stopping
 
@@ -80,7 +80,7 @@ npm run dev
 
 App available at `http://localhost:5173`.
 
-No environment variables or `.env` file needed. Vite proxies all `/api/` requests to `http://localhost:8080` automatically — CORS is not an issue.
+No environment variables or `.env` file needed. Vite proxies all `/api/` requests to `http://localhost:8080` automatically - CORS is not an issue.
 
 ### Available scripts
 
@@ -94,7 +94,7 @@ No environment variables or `.env` file needed. Vite proxies all `/api/` request
 
 ## How the API proxy works
 
-**In Docker** — nginx proxies `/api/` → `http://app:8080/api/` (backend on the internal Docker network):
+**In Docker** - nginx proxies `/api/` → `http://app:8080/api/` (backend on the internal Docker network):
 
 ```nginx
 location /api/ {
@@ -102,7 +102,7 @@ location /api/ {
 }
 ```
 
-**In dev mode** — Vite proxies `/api/` → `http://localhost:8080`:
+**In dev mode** - Vite proxies `/api/` → `http://localhost:8080`:
 
 ```ts
 // vite.config.ts
@@ -113,7 +113,7 @@ server: {
 }
 ```
 
-In both cases the React code just calls `/api/v1/...` — no hardcoded host, no CORS.
+In both cases the React code just calls `/api/v1/...` - no hardcoded host, no CORS.
 
 
 ## Project structure
@@ -126,7 +126,7 @@ frontend/
 │   ├── components/       # UI components (Navbar, DeviceCard, DeviceTable,
 │   │                     #   DetailDrawer, RegisterModal, SubmitReportModal,
 │   │                     #   SummaryStrip, Toast)
-│   ├── pages/            # DevicesPage — main dashboard view
+│   ├── pages/            # DevicesPage - main dashboard view
 │   ├── types/            # Shared TypeScript interfaces
 │   ├── App.tsx
 │   ├── main.tsx
@@ -138,11 +138,11 @@ frontend/
 
 ## Features
 
-- **Device grid / table view** — toggle between card grid and sortable table
-- **Status filtering** — filter by All / Online / Degraded / Offline / Stale
-- **Live search** — search by name, hostname, type, or site
-- **Summary strip** — clickable stat cards showing counts per status
-- **Detail drawer** — slide-in panel with full device info and 20-report timeline
-- **Register device** — modal form with live device type and site dropdowns
-- **Submit status report** — submit ONLINE / DEGRADED / OFFLINE reports from the drawer
-- **Toast notifications** — auto-dismissing success/error feedback
+- **Device grid / table view** - toggle between card grid and sortable table
+- **Status filtering** - filter by All / Online / Degraded / Offline / Stale
+- **Live search** - search by name, hostname, type, or site
+- **Summary strip** - clickable stat cards showing counts per status
+- **Detail drawer** - slide-in panel with full device info and 20-report timeline
+- **Register device** - modal form with live device type and site dropdowns
+- **Submit status report** - submit ONLINE / DEGRADED / OFFLINE reports from the drawer
+- **Toast notifications** - auto-dismissing success/error feedback

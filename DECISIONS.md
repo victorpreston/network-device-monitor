@@ -3,8 +3,6 @@
 
 **Version:** 2.0 &nbsp;·&nbsp; **Stack:** PostgreSQL 15 · Spring Boot 3.3.5 · Java 21
 
----
-
 ## Scope
 
 This service is designed to serve exactly four operations:
@@ -16,11 +14,10 @@ This service is designed to serve exactly four operations:
 
 Nothing beyond this scope is encoded in the schema or application logic. Extension points are called out explicitly where they exist.
 
----
 
 ## 1. Database Schema
 
-The schema is organised into five tables, each named as a plain English noun describing the thing it stores. Consistent, readable naming was a deliberate choice — avoiding abbreviations, `tbl_` prefixes, and Hungarian notation keeps the schema self-explanatory to anyone reading it for the first time.
+The schema is organised into five tables, each named as a plain English noun describing the thing it stores. Consistent, readable naming was a deliberate choice - avoiding abbreviations, `tbl_` prefixes, and Hungarian notation keeps the schema self-explanatory to anyone reading it for the first time.
 
 ### `device_types`
 ```sql
@@ -92,8 +89,6 @@ device_types ──────────────────────<
                                       reports
 ```
 
----
-
 ## 2. Table-by-Table Decisions
 
 ### 2.1 `device_types`
@@ -142,6 +137,10 @@ Both queries against this table - latest-per-device for the list view, last-20 f
 
 A standalone `reports(device_id)` index is not created because the composite index subsumes it - PostgreSQL uses `idx_reports_device_time` for any query filtering only by `device_id`.
 
+**Production extension point - event streaming**
+
+Because `reports` is an append-only event log, it is a natural candidate for feeding a message broker in a production environment. Each `INSERT` into `reports` could publish a `DeviceStatusChanged` event to a topic (e.g. Kafka), allowing downstream consumers - alerting engines, SLA trackers, audit pipelines - to react to status changes without polling the API. This is outside the scope of the current brief but the data model requires no structural changes to support it.
+
 ### 2.5 `current_status`
 
 One row per device. Updated in the **same transaction** as every `INSERT` into `reports`. The row either reflects the latest report or does not exist (the device has never reported).
@@ -158,7 +157,6 @@ This is **CQRS at the data layer**: `reports` is the write model - the immutable
 
 Both writes happen inside a single `@Transactional` method. Either both succeed or both fail. There is no window in which `reports` and `current_status` can be inconsistent.
 
----
 
 ## 3. Cross-Cutting Technical Decisions
 
@@ -379,11 +377,11 @@ The postgres service has a `pg_isready` healthcheck. The application container d
 
 ## 7. Frontend Decisions
 
-### 7.1 API Communication — Proxy over CORS
+### 7.1 API Communication - Proxy over CORS
 
 The frontend never makes a cross-origin request. There is no `Access-Control-Allow-Origin` header on the backend, and none is needed.
 
-**In Docker** — nginx serves the React app on port 3000 and proxies `/api/` to the backend on the internal Docker network:
+**In Docker** - nginx serves the React app on port 3000 and proxies `/api/` to the backend on the internal Docker network:
 
 ```nginx
 location /api/ {
@@ -391,9 +389,9 @@ location /api/ {
 }
 ```
 
-From the browser's perspective, both the HTML and the API responses come from the same origin (`localhost:3000`). The backend is never directly reachable from the browser — it exists only on the internal `netdevmon` Docker network.
+From the browser's perspective, both the HTML and the API responses come from the same origin (`localhost:3000`). The backend is never directly reachable from the browser - it exists only on the internal `netdevmon` Docker network.
 
-**In local development** — Vite's dev server proxies `/api/` to `http://localhost:8080`:
+**In local development** - Vite's dev server proxies `/api/` to `http://localhost:8080`:
 
 ```ts
 // vite.config.ts
@@ -411,6 +409,6 @@ Same outcome: the browser talks to Vite on port 5173, Vite forwards API calls to
 | Option | Assessment |
 |---|---|
 | `@CrossOrigin` / `CorsFilter` on the backend | Requires maintaining an allowed-origins list. In Docker the origin is `localhost:3000`; in staging it changes; in production it changes again. Configuration must track deployment topology. |
-| **Proxy (nginx in Docker, Vite in dev)** ✓ | The React source references only `/api/v1/...` — no hostname, no port. The same build artifact runs in Docker, in any staging environment, and in production without modification. The proxy is the only thing that changes between environments. |
+| **Proxy (nginx in Docker, Vite in dev)** ✓ | The React source references only `/api/v1/...` - no hostname, no port. The same build artifact runs in Docker, in any staging environment, and in production without modification. The proxy is the only thing that changes between environments. |
 
 The React source code contains no hardcoded host or port anywhere.
