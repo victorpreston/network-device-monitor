@@ -1,7 +1,11 @@
 package com.bcs.networkdevicemonitor.controller;
 
+import com.bcs.networkdevicemonitor.domain.enums.DeviceStatus;
 import com.bcs.networkdevicemonitor.dto.request.RegisterSiteRequest;
+import com.bcs.networkdevicemonitor.dto.response.DeviceListResponse;
 import com.bcs.networkdevicemonitor.dto.response.SiteResponse;
+import com.bcs.networkdevicemonitor.exception.ResourceNotFoundException;
+import com.bcs.networkdevicemonitor.service.DeviceService;
 import com.bcs.networkdevicemonitor.service.SiteService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Nested;
@@ -28,6 +32,7 @@ class SiteControllerTest {
     @Autowired ObjectMapper objectMapper;
 
     @MockBean SiteService siteService;
+    @MockBean DeviceService deviceService;
 
     @Nested
     class RegisterSite {
@@ -73,6 +78,64 @@ class SiteControllerTest {
                     .andExpect(jsonPath("$.data.length()").value(2))
                     .andExpect(jsonPath("$.meta.count").value(2))
                     .andExpect(jsonPath("$.errors").doesNotExist());
+        }
+    }
+
+    @Nested
+    class GetSite {
+
+        @Test
+        void returns200_whenSiteExists() throws Exception {
+            UUID id = UUID.randomUUID();
+            SiteResponse response = new SiteResponse(id, "London-01", "1 Tech St", null, null, OffsetDateTime.now());
+            when(siteService.getById(id)).thenReturn(response);
+
+            mockMvc.perform(get("/api/v1/sites/{id}", id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.id").value(id.toString()))
+                    .andExpect(jsonPath("$.data.name").value("London-01"))
+                    .andExpect(jsonPath("$.errors").doesNotExist());
+        }
+
+        @Test
+        void returns404_whenSiteNotFound() throws Exception {
+            UUID id = UUID.randomUUID();
+            when(siteService.getById(id)).thenThrow(new ResourceNotFoundException("Site not found"));
+
+            mockMvc.perform(get("/api/v1/sites/{id}", id))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errors[0].message").value("Site not found"))
+                    .andExpect(jsonPath("$.errors[0].code").value("NOT_FOUND"))
+                    .andExpect(jsonPath("$.data").doesNotExist());
+        }
+    }
+
+    @Nested
+    class GetSiteDevices {
+
+        @Test
+        void returns200_withDevicesForSite() throws Exception {
+            UUID siteId = UUID.randomUUID();
+            DeviceListResponse device = new DeviceListResponse(UUID.randomUUID(), "Router-01", "Router", "192.168.1.1", "London-01", OffsetDateTime.now(), DeviceStatus.ONLINE, OffsetDateTime.now(), false);
+            when(deviceService.listBySite(siteId)).thenReturn(List.of(device));
+
+            mockMvc.perform(get("/api/v1/sites/{id}/devices", siteId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.length()").value(1))
+                    .andExpect(jsonPath("$.meta.count").value(1))
+                    .andExpect(jsonPath("$.data[0].name").value("Router-01"))
+                    .andExpect(jsonPath("$.errors").doesNotExist());
+        }
+
+        @Test
+        void returns404_whenSiteNotFound() throws Exception {
+            UUID siteId = UUID.randomUUID();
+            when(deviceService.listBySite(siteId)).thenThrow(new ResourceNotFoundException("Site not found"));
+
+            mockMvc.perform(get("/api/v1/sites/{id}/devices", siteId))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errors[0].code").value("NOT_FOUND"))
+                    .andExpect(jsonPath("$.data").doesNotExist());
         }
     }
 }

@@ -3,6 +3,7 @@ package com.bcs.networkdevicemonitor.service;
 import com.bcs.networkdevicemonitor.domain.entity.Site;
 import com.bcs.networkdevicemonitor.dto.request.RegisterSiteRequest;
 import com.bcs.networkdevicemonitor.dto.response.SiteResponse;
+import com.bcs.networkdevicemonitor.exception.ResourceNotFoundException;
 import com.bcs.networkdevicemonitor.repository.SiteRepository;
 import com.bcs.networkdevicemonitor.service.impl.SiteServiceImpl;
 import org.junit.jupiter.api.Nested;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
@@ -70,6 +72,32 @@ class SiteServiceTest {
             when(siteRepository.findAll()).thenReturn(List.of());
 
             assertThat(siteService.listAll()).isEmpty();
+        }
+    }
+
+    @Nested
+    class GetById {
+
+        @Test
+        void returnsSite_whenExists() {
+            UUID id = UUID.randomUUID();
+            Site s = Site.builder().id(id).name("London-01").address("1 Tech St").createdAt(OffsetDateTime.now()).build();
+            when(siteRepository.findById(id)).thenReturn(Optional.of(s));
+
+            SiteResponse response = siteService.getById(id);
+
+            assertThat(response.id()).isEqualTo(id);
+            assertThat(response.name()).isEqualTo("London-01");
+        }
+
+        @Test
+        void throws_whenNotFound() {
+            UUID id = UUID.randomUUID();
+            when(siteRepository.findById(id)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> siteService.getById(id))
+                    .isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Site not found");
         }
     }
 

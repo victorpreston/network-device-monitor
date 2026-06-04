@@ -1,6 +1,7 @@
 package com.bcs.networkdevicemonitor.service.impl;
 
 import com.bcs.networkdevicemonitor.domain.entity.*;
+import com.bcs.networkdevicemonitor.domain.enums.DeviceStatus;
 import com.bcs.networkdevicemonitor.dto.request.RegisterDeviceRequest;
 import com.bcs.networkdevicemonitor.dto.response.DeviceDetailResponse;
 import com.bcs.networkdevicemonitor.dto.response.DeviceListResponse;
@@ -52,17 +53,23 @@ public class DeviceServiceImpl implements DeviceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<DeviceListResponse> listAll() {
+    public List<DeviceListResponse> listAll(DeviceStatus status, Boolean stale) {
         List<Device> devices = deviceRepository.findAllWithDetails();
+        List<DeviceListResponse> responses = toListResponses(devices);
 
-        Map<UUID, CurrentStatus> statusMap = currentStatusRepository
-                .findAllById(devices.stream().map(Device::getId).toList())
-                .stream()
-                .collect(Collectors.toMap(cs -> cs.getDevice().getId(), cs -> cs));
-
-        return devices.stream()
-                .map(d -> toListResponse(d, statusMap.get(d.getId())))
+        return responses.stream()
+                .filter(r -> status == null || r.currentStatus() == status)
+                .filter(r -> stale == null || r.stale() == stale)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DeviceListResponse> listBySite(UUID siteId) {
+        if (!siteRepository.existsById(siteId)) {
+            throw new ResourceNotFoundException("Site not found");
+        }
+        return toListResponses(deviceRepository.findAllBySiteIdWithDetails(siteId));
     }
 
     @Override
@@ -91,6 +98,14 @@ public class DeviceServiceImpl implements DeviceService {
                 isStale(cs),
                 reports
         );
+    }
+
+    private List<DeviceListResponse> toListResponses(List<Device> devices) {
+        Map<UUID, CurrentStatus> statusMap = currentStatusRepository
+                .findAllById(devices.stream().map(Device::getId).toList())
+                .stream()
+                .collect(Collectors.toMap(cs -> cs.getDevice().getId(), cs -> cs));
+        return devices.stream().map(d -> toListResponse(d, statusMap.get(d.getId()))).toList();
     }
 
     private boolean isStale(CurrentStatus cs) {
