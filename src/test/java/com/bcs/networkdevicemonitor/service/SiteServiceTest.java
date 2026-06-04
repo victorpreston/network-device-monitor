@@ -5,6 +5,7 @@ import com.bcs.networkdevicemonitor.dto.request.RegisterSiteRequest;
 import com.bcs.networkdevicemonitor.dto.response.SiteResponse;
 import com.bcs.networkdevicemonitor.repository.SiteRepository;
 import com.bcs.networkdevicemonitor.service.impl.SiteServiceImpl;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,47 +24,56 @@ import static org.mockito.Mockito.*;
 class SiteServiceTest {
 
     @Mock SiteRepository siteRepository;
-
     @InjectMocks SiteServiceImpl siteService;
 
-    @Test
-    void register_returnsSiteResponse_whenRequestIsValid() {
-        Site saved = Site.builder()
-                .id(UUID.randomUUID())
-                .name("London-01")
-                .address("1 Tech Street, London")
-                .createdAt(OffsetDateTime.now())
-                .build();
+    @Nested
+    class Register {
 
-        when(siteRepository.save(any())).thenReturn(saved);
+        @Test
+        void returnsSiteResponse_whenRequestIsValid() {
+            Site saved = Site.builder()
+                    .id(UUID.randomUUID())
+                    .name("London-01")
+                    .address("1 Tech Street, London")
+                    .createdAt(OffsetDateTime.now())
+                    .build();
 
-        SiteResponse response = siteService.register(new RegisterSiteRequest("London-01", "1 Tech Street, London"));
+            when(siteRepository.save(any())).thenReturn(saved);
 
-        assertThat(response.name()).isEqualTo("London-01");
-        assertThat(response.address()).isEqualTo("1 Tech Street, London");
-        assertThat(response.id()).isNotNull();
+            SiteResponse response = siteService.register(new RegisterSiteRequest("London-01", "1 Tech Street, London", null, null));
+
+            assertThat(response.name()).isEqualTo("London-01");
+            assertThat(response.address()).isEqualTo("1 Tech Street, London");
+            assertThat(response.id()).isNotNull();
+        }
     }
 
-    @Test
-    void listAll_returnsAllSites() {
-        List<Site> sites = List.of(
-                Site.builder().id(UUID.randomUUID()).name("London-01").createdAt(OffsetDateTime.now()).build(),
-                Site.builder().id(UUID.randomUUID()).name("Manchester-01").createdAt(OffsetDateTime.now()).build()
-        );
+    @Nested
+    class ListAll {
 
-        when(siteRepository.findAll()).thenReturn(sites);
+        @Test
+        void returnsAllSites() {
+            when(siteRepository.findAll()).thenReturn(List.of(
+                    site("London-01"),
+                    site("Manchester-01")
+            ));
 
-        List<SiteResponse> result = siteService.listAll();
+            List<SiteResponse> result = siteService.listAll();
 
-        assertThat(result).hasSize(2);
-        assertThat(result).extracting(SiteResponse::name)
-                .containsExactly("London-01", "Manchester-01");
+            assertThat(result).hasSize(2);
+            assertThat(result).extracting(SiteResponse::name)
+                    .containsExactly("London-01", "Manchester-01");
+        }
+
+        @Test
+        void returnsEmptyList_whenNoSitesExist() {
+            when(siteRepository.findAll()).thenReturn(List.of());
+
+            assertThat(siteService.listAll()).isEmpty();
+        }
     }
 
-    @Test
-    void listAll_returnsEmptyList_whenNoSitesExist() {
-        when(siteRepository.findAll()).thenReturn(List.of());
-
-        assertThat(siteService.listAll()).isEmpty();
+    private Site site(String name) {
+        return Site.builder().id(UUID.randomUUID()).name(name).createdAt(OffsetDateTime.now()).build();
     }
 }
