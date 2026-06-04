@@ -1,0 +1,7 @@
+.git
+.github
+.claude
+*.md
+backend/target/
+frontend/node_modules/
+frontend/dist/

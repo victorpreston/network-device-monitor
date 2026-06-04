@@ -1,181 +1,85 @@
 # Network Device Monitoring Service
 
-A backend service for registering and monitoring network infrastructure devices. Devices periodically report their operational status, and the system tracks their current state, flags stale devices, and maintains a full report history.
+A full-stack service for registering and monitoring network infrastructure assets. Devices report their operational status; the system tracks current state, flags stale devices, and maintains a full report history.
 
----
+For all architectural and design decisions — schema choices, API design, testing strategy, infrastructure — see [DECISIONS.md](./DECISIONS.md).
 
-## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Language | Java 21 |
-| Framework | Spring Boot 3.3.5 |
-| Database | PostgreSQL 15 |
-| Migrations | Flyway |
-| Documentation | SpringDoc OpenAPI (Swagger UI) |
-| Containerisation | Docker + Docker Compose |
+## Quick Start
 
----
-
-## Database Schema
-
-Five tables, each with a single responsibility:
-
-| Table | Purpose |
-|-------|---------|
-| `device_types` | Reference table - CPE, Router, Switch, Access Point, Firewall, ONT |
-| `sites` | Physical deployment locations |
-| `devices` | Registered network assets |
-| `reports` | Append-only status event log |
-| `current_status` | Current operational state per device (read model) |
-
----
-
-## Prerequisites
-
-- Java 21
-- Maven 3.9+ (or use `./mvnw`)
-- PostgreSQL 15 (or Docker)
-
----
-
-## Running with Docker (Recommended)
-
-Starts both PostgreSQL and the application:
+The entire stack — database, backend, and frontend — runs with one command from the repo root:
 
 ```bash
-cp .env.example .env        # fill in your credentials
 docker-compose up --build
 ```
 
-The API will be available at `http://localhost:8080`.
+| Service | URL |
+|---|---|
+| Dashboard | http://localhost:3000 |
+| Backend API | http://localhost:8080/api/v1 |
+| Swagger UI (API docs) | http://localhost:8080/docs |
 
-To stop and remove volumes:
+No environment variables or configuration are required. The defaults (`DB_USERNAME=postgres`, `DB_PASSWORD=postgres`) are built into the Compose file. Flyway runs automatically on startup — it creates the schema and seeds demo devices covering all four statuses (Online, Degraded, Offline, Stale).
+
+To stop and wipe the database:
 
 ```bash
 docker-compose down -v
 ```
 
----
+## Why `docker-compose up` is all you need
 
-## Running Locally
-
-**1. Create the database:**
-
-```sql
-CREATE DATABASE netdevmon;
-```
-
-**2. Configure credentials** (optional - defaults to `postgres/postgres`):
-
-```bash
-export DB_USERNAME=your_user
-export DB_PASSWORD=your_password
-```
-
-**3. Start the application:**
-
-```bash
-./mvnw spring-boot:run
-```
-
-Flyway will run all migrations and seed the device types on startup.
-
----
-
-## API Endpoints
-
-### Devices
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/devices` | Register a new device |
-| `GET` | `/api/v1/devices` | List all devices with current status and stale flag |
-| `GET` | `/api/v1/devices/{id}` | Get a device with its 20 most recent reports |
-| `POST` | `/api/v1/devices/{id}/reports` | Submit a status report for a device |
-
-### Sites
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/v1/sites` | Register a site |
-| `GET` | `/api/v1/sites` | List all sites |
-
-### Device Types
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/device-types` | List all device types |
-
----
-
-## API Documentation
-
-Swagger UI is available at:
+Three services start in a dependency chain, each waiting for the previous one to be healthy before starting:
 
 ```
-http://localhost:8080/swagger-ui.html
+postgres  ──(healthy)──▶  app (Spring Boot)  ──(healthy)──▶  frontend (nginx)
 ```
 
-OpenAPI JSON spec:
+**API calls from the browser never hit a CORS issue** because the frontend is not making cross-origin requests. nginx — which serves the React app on port 3000 — also acts as a reverse proxy: any request the browser makes to `/api/...` is forwarded internally to `http://app:8080/api/...` on the Docker network. From the browser's perspective, everything is on the same origin (`localhost:3000`).
 
 ```
-http://localhost:8080/api-docs
+Browser → localhost:3000/api/v1/devices
+                 │
+            nginx proxy
+                 │
+         app:8080/api/v1/devices   (Docker internal network)
 ```
 
----
+The React source code only ever references `/api/v1/...` — no hardcoded host or port.
 
-## Example Requests
 
-**Register a site:**
-```json
-POST /api/v1/sites
-{
-  "name": "London-01",
-  "address": "1 Tech Street, London"
-}
+## Repo Structure
+
+```
+network-device-monitoring/
+├── backend/                  Spring Boot REST API
+│   ├── src/
+│   ├── pom.xml
+│   ├── Dockerfile
+│   └── README.md             ← API endpoints, env vars, running tests
+├── frontend/                 React + TypeScript dashboard
+│   ├── src/
+│   ├── nginx.conf
+│   ├── Dockerfile
+│   └── README.md             ← dev server setup, proxy explanation, project structure
+├── docker-compose.yaml       Runs the full stack
+├── DECISIONS.md              Architecture and design decisions (start here)
+└── README.md                 This file
 ```
 
-**Register a device:**
-```json
-POST /api/v1/devices
-{
-  "name": "Core Router 01",
-  "deviceTypeId": "<uuid-of-Router>",
-  "hostname": "core-rtr-01.london-01.corp",
-  "siteId": "<uuid-of-site>"
-}
-```
+## Running without Docker
 
-**Submit a status report:**
-```json
-POST /api/v1/devices/{id}/reports
-{
-  "status": "ONLINE",
-  "message": "All interfaces up"
-}
-```
+For local development (e.g. running the backend in an IDE while hot-reloading the frontend):
 
----
+- **[backend/README.md](./backend/README.md)** — prerequisites, environment variables, running the API, running the 40-test suite
+- **[frontend/README.md](./frontend/README.md)** — `npm install`, `npm run dev`, how the Vite dev proxy replaces nginx for local development
 
-## Stale Detection
 
-A device is considered **stale** if it has not submitted a report within the last **15 minutes**, or if it has never submitted a report. The stale flag is computed at read time and returned on every device response.
+## Tech Stack
 
----
-
-## Running Tests
-
-```bash
-./mvnw test
-```
-
----
-
-## Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DB_USERNAME` | `postgres` | Database username |
-| `DB_PASSWORD` | `postgres` | Database password |
-| `SPRING_DATASOURCE_URL` | `jdbc:postgresql://localhost:5432/netdevmon` | Full JDBC URL |
+| Layer | Technology |
+|---|---|
+| Backend | Java 21 · Spring Boot 3.3.5 · PostgreSQL 15 · Flyway |
+| Frontend | React 19 · TypeScript · Vite · Pure CSS (custom properties) |
+| Infrastructure | Docker · Docker Compose · nginx |
+| Testing | JUnit 5 · Mockito · MockMvc · 40 tests |
